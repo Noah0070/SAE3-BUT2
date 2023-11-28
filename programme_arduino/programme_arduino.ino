@@ -1,10 +1,14 @@
 #include <Wire.h>
 #include <DFRobot_ADS1115.h>
 
+#define bit_set(var, No_bit) ((var)|= (1<<No_bit)); // mise à 1
+#define bit_clr(var, No_bit) ((var)&= ~(1<<No_bit)); // mise à 0
+
 DFRobot_ADS1115 ads(&Wire);
 int16_t adc0, adc1, adc2, adc3;
 int i = 1;
 
+char sensors = 0x0;
 int a0_line = 3400;
 int a1_line = 4050;
 int a2_line = 3900;
@@ -33,7 +37,7 @@ void loop(void)
 {
     if (ads.checkADS1115())
     {   
-        readCAN();
+        checkSensors();
         
         Serial.print("A0:");
         Serial.print(adc0);
@@ -58,15 +62,20 @@ void loop(void)
     }
     i++;
 
-    if (detect_a0()) {
+    checkSensors();
+    Serial.println(sensors);
+
+    
+    if ((sensors&(1<<0)) > 0) {
       Serial.println("a0 -> ligne noire !");                    
     }
-    if (detect_a1()) {
+    if ((sensors&(1<<1)) > 0) {
       Serial.println("a1 -> ligne noire !");                    
     }
-    if (detect_a2()) {
+    if ((sensors&(1<<2)) > 0) {
       Serial.println("a2 -> ligne noire !");                    
     }
+
     delay(500);
 }
 
@@ -74,27 +83,33 @@ void loop(void)
 
 bool detect_a0(){
   if (adc0 < a0_line) {
-    return true;
+    bit_set(sensors, 0);
   }
-  else {
-    return false;
+  else { 
+    bit_clr(sensors, 0);
   }
 }
 
 bool detect_a1(){
   if (adc1 < a1_line) {
-    return true;
+    bit_set(sensors, 1);
   }
   else {
-    return false;
+    bit_clr(sensors, 1);
   }
 }
 
 bool detect_a2(){
   if (adc2 < a2_line) { // Si la ligne est détectée
-    return true;
+    bit_set(sensors, 2);
   }
   else {
-    return false;
+    bit_clr(sensors, 2);
   }
+}
+
+void checkSensors(void) {
+  detect_a0();
+  detect_a1();
+  detect_a2();
 }
