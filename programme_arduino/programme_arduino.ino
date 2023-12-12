@@ -8,6 +8,7 @@ DFRobot_ADS1115 ads(&Wire);
 int16_t adc0, adc1, adc2, adc3;
 int i = 1;
 char sensors;
+int motor_speed = 80;
 
 int E1 = 5;
 int M1 = 4;
@@ -59,23 +60,26 @@ void setup(void)
     */
 
     // ----------------- SETUP TIMER 1 ----------------------------
-      noInterrupts();
-    // Clear registers
-    TCCR1A = 0;
-    TCCR1B = 0;
-    TCNT1 = 0;
-  
-    // 50 Hz (16000000/((20+1)*256))
-    OCR1A = 20;
-    // CTC
-    TCCR1B |= (1 << WGM12);
-    // Prescaler 256
-    TCCR1B |= (1 << CS12);
-    // Output Compare Match A Interrupt Enable
-    TIMSK1 |= (1 << OCIE1A);
-    interrupts();
-    digitalWrite(10, LOW);
-    digitalWrite(9, LOW);
+  noInterrupts();
+  // Clear registers
+  TCCR1A = 0;
+  TCCR1B = 0;
+  TCNT1 = 0;
+
+  // 50 Hz (16000000/((20+1)*256))
+  OCR1A = 200;  // Valeur pour le moteur droit
+  OCR1B = 120;  // Valeur pour le moteur gauche
+
+  // CTC
+  TCCR1B |= (1 << WGM12);
+  // Prescaler 256
+  TCCR1B |= (1 << CS12);
+  // Output Compare Match A Interrupt Enable
+  TIMSK1 |= (1 << OCIE1A);
+  interrupts();
+
+  digitalWrite(10, LOW);  // Moteur droit
+  digitalWrite(9, LOW);   // Moteur gauche
 }
 
 ISR(TIMER1_COMPA_vect) {
@@ -228,18 +232,18 @@ bool line_on_left() {
 
 // ----------------- DIRECTION DU ROBOT -------------------------------------
 void go_forward(void) { // le robot avance tout droit (les deux moteurs fonctionnent)
-  pinMode(9, OUTPUT);
-  pinMode(10, OUTPUT);
+  OCR1A = motor_speed;  // Valeur pour le moteur droit
+  OCR1B = motor_speed;  // Valeur pour le moteur gauche
 }
 
 void turn_right(void) { // le robot s'arrête et tourne sur lui même vers la droite (moteur gauche désactivé)
-  pinMode(9, OUTPUT);
-  pinMode(10, INPUT);
+  OCR1A = motor_speed*0;  // Valeur pour le moteur droit
+  OCR1B = motor_speed;  // Valeur pour le moteur gauche
 }
 
 void turn_left(void) { // le robot s'arrête et tourne sur lui même vers la gauche (moteur droit désactivé)
-  pinMode(9, INPUT);
-  pinMode(10, OUTPUT);
+  OCR1A = motor_speed;  // Valeur pour le moteur droit
+  OCR1B = motor_speed*0;  // Valeur pour le moteur gauche
 }
 
 void select_direction(void) {
