@@ -38,7 +38,7 @@ void setup(void)
     ads.setOSMode(eOSMODE_SINGLE);   // Set to start a single-conversion
     ads.init();
 
-    // ----------------- SETUP PARTIE PUISSANCE ROBOT ----------------------------
+    // ----------------- SETUP BROCHES PARTIE PUISSANCE ROBOT ----------------------------
     pinMode(9, OUTPUT);
     pinMode(10, OUTPUT);
     pinMode(M1, OUTPUT);
@@ -46,15 +46,42 @@ void setup(void)
     pinMode(E1, INPUT);
     pinMode(E2, INPUT);
     pinMode(13, OUTPUT);
+
+    // ----------------- SETUP TIMER 1 (PWM) ----------------------------
+    /*
         // Signal de periode 65ms
-    OCR1A= 200;
-    //ICR1 = 200;
-    OCR1B= 255; 
+    OCR1A= 500; // Broche 9
+    OCR1B= 500; // Broche 10
+    ICR1 = 500;
     // non-inverted fast PWM on OC1A with prescalar of 1
-    TCCR1A = (1<<COM1A0) | (1<<COM1A1) | (1<<COM1B0) | (1<<COM1B1) | (1<<WGM11) | (1<<WGM10); // Fast PWM inverting mode -- On paramètre COM1A:B pour gérer les sorties
+    TCCR1A = (1<<COM1A1) | (1<<COM1B1) | (1<<WGM11) | (1<<WGM10); // Fast PWM inverting mode -- On paramètre COM1A:B pour gérer les sorties
     TCCR1B = (1<<WGM12) | (1<<CS12) | (1<<CS10); // Fast PMW 10 bits - prescaler max (1024)
+    */
+
+    // ----------------- SETUP TIMER 1 ----------------------------
+      noInterrupts();
+    // Clear registers
+    TCCR1A = 0;
+    TCCR1B = 0;
+    TCNT1 = 0;
+  
+    // 50 Hz (16000000/((20+1)*256))
+    OCR1A = 20;
+    // CTC
+    TCCR1B |= (1 << WGM12);
+    // Prescaler 256
+    TCCR1B |= (1 << CS12);
+    // Output Compare Match A Interrupt Enable
+    TIMSK1 |= (1 << OCIE1A);
+    interrupts();
+    digitalWrite(10, LOW);
+    digitalWrite(9, LOW);
 }
 
+ISR(TIMER1_COMPA_vect) {
+  digitalWrite(10, !digitalRead(10));
+  digitalWrite(9, !digitalRead(9));
+}
 
 void readCAN() { // Fonction qui enregistre les valeurs du CAN dans les variables dédiées
   adc0 = ads.readVoltage(0);
@@ -63,7 +90,7 @@ void readCAN() { // Fonction qui enregistre les valeurs du CAN dans les variable
   adc3 = ads.readVoltage(3);
 }
 
-
+// ------------ LOOOOOOOOOOOOOOOOOP ----------------------------------
 void loop(void) 
 {
     if (ads.checkADS1115())
@@ -123,8 +150,8 @@ void loop(void)
     }
 
     Serial.println(" ");
-    select_direction();
-    delay(500);
+    //select_direction();
+    delay(200);
 }
 
 
